@@ -4,6 +4,9 @@ transXpress: a [Snakemake](https://snakemake.readthedocs.io/en/stable/) pipeline
 
 ## Intro
 
+readme: NOTE: This documentation is out-of-date and refers to the base instructions for running this pipeline.
+Please refer to the lab wiki for usage instructions.
+
 ## Dependencies
 
 transXpress requires:

@@ -5,6 +5,7 @@ default-resources:
     runtime: 2880
     threads: 1
     mem: 2gb
+    disk: 10gb
 set-resources:
     trimmomatic_parallel:
         mem: 10gb
@@ -62,5 +63,5 @@ restart-times: 2
 latency-wait: 60
 jobs: 1000
 rerun-incomplete: True
-conda-frontend: mamba
+conda-frontend: conda
 use-conda: True
