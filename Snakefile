@@ -839,7 +839,7 @@ checkpoint align_reads:
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
-    memory="100"
+    memory="128"
   threads:
     16
   shell:

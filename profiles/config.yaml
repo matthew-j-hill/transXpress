@@ -17,7 +17,7 @@ set-resources:
     trinity_inchworm_chrysalis:
         slurm_partition: long
         runtime: 7200
-        mem: 200gb
+        mem: 256gb
         threads: 16
     trinity_butterfly_parallel:
         mem: 10gb
@@ -26,12 +26,12 @@ set-resources:
     trinity_final:
         slurm_partition: long
         runtime: 7200
-        mem: 200gb
+        mem: 256gb
         threads: 16
     rnaspades:
         slurm_partition: long
         runtime: 7200
-        mem: 200gb
+        mem: 256gb
         threads: 16
     busco:
         mem: 10gb
@@ -39,7 +39,7 @@ set-resources:
     transdecoder_predict:
         mem: 10gb
     align_reads:
-        mem: 100gb
+        mem: 128gb
         threads: 16
     rfam_parallel:
         mem: 8gb
