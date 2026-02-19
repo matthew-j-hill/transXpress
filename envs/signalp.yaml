@@ -1,4 +1,4 @@
-name: signalp
+name: transxpress-signalp
 channels:
   - conda-forge
   - bioconda

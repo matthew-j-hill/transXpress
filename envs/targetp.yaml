@@ -1,4 +1,4 @@
-name: targetp
+name: transxpress-targetp
 channels:
   - conda-forge
   - bioconda

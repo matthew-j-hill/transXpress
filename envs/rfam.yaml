@@ -1,3 +1,4 @@
+name: transxpress-rfam
 channels:
   - conda-forge
   - bioconda

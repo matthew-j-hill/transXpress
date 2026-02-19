@@ -1,3 +1,4 @@
+name: transxpress-pfam
 channels:
   - conda-forge
   - bioconda

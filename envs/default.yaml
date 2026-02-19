@@ -1,3 +1,4 @@
+name: transxpress-default
 channels:
   - conda-forge
   - bioconda

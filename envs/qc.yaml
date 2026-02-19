@@ -1,3 +1,4 @@
+name: transxpress-qc
 channels:
   - conda-forge
   - bioconda
