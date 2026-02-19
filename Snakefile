@@ -76,7 +76,7 @@ rule fastqc_before_trim:
   log:
     "logs/fastqc_before_trim.log"
   conda:
-    "envs/qc.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
@@ -104,7 +104,7 @@ rule multiqc_before_trim:
   log:
     "logs/multiqc_before_trim.log"
   conda:
-    "envs/qc.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
@@ -313,7 +313,7 @@ rule trimmomatic_parallel:
   log:
     "logs/trimmomatic_parallel{job_index}.log"
   conda:
-    "envs/trimmomatic.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trimmomatic"
   params:
     memory="10"
   threads:
@@ -373,7 +373,7 @@ rule fastqc_after_trim:
   log:
     "logs/fastqc_after_trim.log"
   conda:
-    "envs/qc.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
@@ -401,7 +401,7 @@ rule multiqc_after_trim:
   log:
     "logs/multiqc_after_trim.log"
   conda:
-    "envs/qc.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
@@ -541,7 +541,7 @@ rule trinity_inchworm_chrysalis:
   log:
     "logs/trinity_inchworm_chrysalis.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="256"
   threads:
@@ -583,7 +583,7 @@ rule trinity_butterfly_parallel:
   log:
     "logs/trinity_parallel{job_index}.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="10"
   threads:
@@ -637,7 +637,7 @@ rule trinity_final:
   log:
     "logs/trinity_final.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="256"
   threads:
@@ -661,7 +661,7 @@ rule rnaspades:
   log:
     "logs/rnaspades.log"
   conda:
-    "envs/rnaspades.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rnaspades"
   params:
     memory="256"
   threads:
@@ -714,7 +714,7 @@ rule trinity_stats:
   log:
     "logs/trinity_exN50.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="2"
   threads:
@@ -745,7 +745,7 @@ rule busco:
   log:
     "logs/busco.log"
   conda:
-    "envs/busco.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-busco"
   params:
     memory="10"
   threads:
@@ -783,7 +783,7 @@ rule transdecoder_longorfs:
   log:
     "logs/transdecoder_longorfs.log"
   conda:
-    "envs/transdecoder.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder"
   params:
     memory="2"
   threads:
@@ -810,7 +810,7 @@ rule transdecoder_predict:
   log:
     "logs/transdecoder_predict.log"
   conda:
-    "envs/transdecoder.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder"
   params:
     memory="10"
   threads:
@@ -837,7 +837,7 @@ checkpoint align_reads:
   log:
     "logs/bowtie2.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="100"
   threads:
@@ -882,7 +882,7 @@ checkpoint prepare_samples_for_IGV:
   log:
     "logs/prepare_for_IGV_{sample}.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="2"
   threads:
@@ -928,7 +928,7 @@ rule trinity_DE:
   log:
     "logs/trinity_DE.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="2"
   threads:
@@ -1162,7 +1162,7 @@ rule rfam_parallel:
   log:
     "logs/rfam_{index}.log"
   conda:
-    "envs/rfam.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam"
   params:
     memory="8" # increased memory from 2 to 8 becuase it was not sufficient
   threads:
@@ -1185,7 +1185,7 @@ rule pfam_parallel:
   log:
     "logs/pfam_{index}.log"
   conda:
-    "envs/pfam.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam"
   params:
     memory="2"
   threads:
@@ -1209,7 +1209,7 @@ rule sprot_blastp_parallel:
   log:
     "logs/sprotblastp{index}.log"
   conda:
-    "envs/blast.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
   params:
     memory="4"
   threads:
@@ -1232,7 +1232,7 @@ rule sprot_blastx_parallel:
   log:
     "logs/sprotblastx_{index}.log"
   conda:
-    "envs/blast.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
   params:
     memory="4"
   threads:
@@ -1253,7 +1253,7 @@ rule signalp_parallel:
   log:
     "logs/signalp_{index}.log"
   conda:
-    "signalp"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/signalp"
   params:
     memory="8"
   threads:
@@ -1278,7 +1278,7 @@ rule targetp_parallel:
   log:
     "logs/targetp_{index}.log"
   conda:
-    "targetp"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/targetp"
   params:
     memory="2"
   threads:
@@ -1306,7 +1306,7 @@ rule kallisto:
   log:
     "logs/kallisto.log"
   conda:
-    "envs/trinity_utils.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
   params:
     memory="16" # increased memory from 2 to 8 since it was not sufficient
   threads:
@@ -1362,7 +1362,7 @@ rule download_sprot:
   log:
     "logs/download_sprot.log"
   conda:
-    "envs/blast.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
   params:
     memory="2"
   threads:
@@ -1384,7 +1384,7 @@ rule download_pfam:
   log:
     "logs/download_pfam.log"
   conda:
-    "envs/pfam.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam"
   params:
     memory="2"
   threads:
@@ -1406,7 +1406,7 @@ rule download_rfam:
   log:
     "logs/download_rfam.log"
   conda:
-    "envs/rfam.yaml"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam"
   params:
     memory="2"
   threads:
