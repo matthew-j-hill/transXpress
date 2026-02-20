@@ -541,7 +541,7 @@ rule trinity_inchworm_chrysalis:
   log:
     "logs/trinity_inchworm_chrysalis.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="256"
   threads:
@@ -583,7 +583,7 @@ rule trinity_butterfly_parallel:
   log:
     "logs/trinity_parallel{job_index}.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="10"
   threads:
@@ -637,7 +637,7 @@ rule trinity_final:
   log:
     "logs/trinity_final.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="256"
   threads:
@@ -714,7 +714,7 @@ rule trinity_stats:
   log:
     "logs/trinity_exN50.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="2"
   threads:
@@ -837,9 +837,9 @@ checkpoint align_reads:
   log:
     "logs/bowtie2.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
-    memory="128"
+    memory="100"
   threads:
     16
   shell:
@@ -882,7 +882,7 @@ checkpoint prepare_samples_for_IGV:
   log:
     "logs/prepare_for_IGV_{sample}.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="2"
   threads:
@@ -928,7 +928,7 @@ rule trinity_DE:
   log:
     "logs/trinity_DE.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="2"
   threads:
@@ -1306,7 +1306,7 @@ rule kallisto:
   log:
     "logs/kallisto.log"
   conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinity_utils"
+    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="16" # increased memory from 2 to 8 since it was not sufficient
   threads:
