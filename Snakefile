@@ -1369,7 +1369,7 @@ rule download_sprot:
     1
   shell:
     """
-    wget --directory-prefix db "ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
+    wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
     gunzip db/uniprot_sprot.fasta.gz &>> {log}
     makeblastdb -in db/uniprot_sprot.fasta -dbtype prot &>> {log}
     """
