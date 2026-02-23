@@ -543,7 +543,7 @@ rule trinity_inchworm_chrysalis:
   conda:
     "transxpress-trinityutils"
   params:
-    memory="200"
+    memory="256"
   threads:
     16
   shell:
@@ -639,7 +639,7 @@ rule trinity_final:
   conda:
     "transxpress-trinityutils"
   params:
-    memory="200"
+    memory="256"
   threads:
     16
   shell:
@@ -663,7 +663,7 @@ rule rnaspades:
   conda:
     "transxpress-rnaspades"
   params:
-    memory="200"
+    memory="256"
   threads:
     16
   shell:
