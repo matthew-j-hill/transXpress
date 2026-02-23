@@ -1242,85 +1242,6 @@ rule sprot_blastx_parallel:
     blastx -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
     """
 
-
-rule tmhmm_parallel:
-  """
-  Runs tmhmm.py on smaller protein files in parallel to predict transmembrane
-  topology.
-  """
-  input:
-    "annotations/chunks_pep/{index}.pep"
-  output:
-    "annotations/tmhmm/{index}.out"
-  log:
-    "logs/tmhmm_{index}.log"
-  params:
-    memory="2"
-  threads:
-    1
-  run:
-    output_dir = os.path.join("annotations", "tmhmm")
-
-    # create output directory
-    os.makedirs(output_dir, exist_ok=True)
-
-    # open the input file, output file and log file
-    with open(input[0], "r") as input_handle, open(output[0], "a+") as output_handle, open(log[0], "a+") as log_handle:
-
-      # iterate through individual sequences in input file, tmhmm.py can be executed with just one sequence at a time
-      for record in Bio.SeqIO.parse(input_handle, "fasta"):
-
-        # individual fasta headers must have an ID and description, separated by a space, otherwise error occurs
-        # see: https://github.com/dansondergaard/tmhmm.py/issues/16
-        # adding artificial "description" in header
-        record.description = " x"
-
-        # tmhmm.py does not handle 'X' in the sequence (happens when using RNASpades as an assembler and 'N' occurs in the transcript sequence)
-        # see: https://github.com/dansondergaard/tmhmm.py/issues/9
-        # removing 'X' from the sequence
-        record.seq = Seq(re.sub('X',"",str(record.seq)))
-
-        # saving this fasta file
-        fasta_file =  os.path.join(output_dir, record.id + ".fasta")
-        Bio.SeqIO.write(record, fasta_file, "fasta")
-
-        # executing the tmhmm.py on created fasta
-        cmd_tmhmm = ['tmhmm', '-f', fasta_file]
-        subprocess.run(cmd_tmhmm, stdout = log_handle, stderr = log_handle)
-
-        # 3 files are created afterwards
-        # record.id.summary     record.id.annotation    record.id.plot
-
-        summary_file = record.id + ".summary"
-        annotation_file = record.id + ".annotation"
-        plot_file = record.id + ".plot"
-
-        # creating shorter output from summary file
-        with open(summary_file, "r") as inp:
-          final_topology = ''
-          num_of_helices = 0
-
-          for line in inp:
-            # split the line of format "start end topology" into list [start, end, topology]
-            split_line = re.split(r'\s+', line, 2)
-            start = split_line[0].strip()
-            end = split_line[1].strip()
-            topology = split_line[2].strip()
-
-            # update final string based on the topology
-            if (topology == 'inside'):
-              final_topology += 'i'
-            if (topology == 'outside'):
-              final_topology += 'o'
-            if ('transmembrane helix' in topology):
-              final_topology += start + '-' + end
-              num_of_helices += 1
-
-          output_handle.write(record.id + "\tPredHel=" + str(num_of_helices) + "\tTopology=" + final_topology + "\n")
-        os.remove(summary_file)
-        os.remove(annotation_file)
-        os.remove(plot_file)
-
 rule signalp_parallel:
   """
   Runs signalp on smaller protein files in parallel to predict signal peptides.
@@ -1531,7 +1452,6 @@ rule annotated_fasta:
     rfam_results="annotations/rfam_fasta.out",
     blastp_results="annotations/sprotblastp_orfs.out",
     pfam_results="annotations/pfam_orfs.out",
-    tmhmm_results="annotations/tmhmm_pep.out",
     signalp_results="annotations/signalp_pep.out",
     targetp_results="annotations/targetp_pep.out"
   output:
@@ -1553,7 +1473,6 @@ rule annotated_fasta:
       blastp_annotations = {}
       pfam_annotations = {}
       rfam_annotations = {}
-      tmhmm_annotations = {}
       signalp_annotations = {}
       targetp_annotations = {}
   
@@ -1602,14 +1521,6 @@ rule annotated_fasta:
           if (len(row) < 18): continue
           rfam_annotations[row[2]] = row[1] + " " + row[17] + "E=" + str(row[15])
   
-      ## Load tmhmm results
-      print ("Loading tmhmm predictions from", input["tmhmm_results"], file=log_handle)
-      with open(input["tmhmm_results"]) as input_handle:
-        csv_reader = csv.reader(input_handle, delimiter="\t")
-        for row in csv_reader:
-          if (len(row) > 2):
-            tmhmm_annotations[row[0]] = row[1] + " " + row[2]
-
       ## Load signalp results
       print ("Loading signalp predictions from", input["signalp_results"], file=log_handle)
       with open(input["signalp_results"]) as input_handle:
@@ -1673,8 +1584,6 @@ rule annotated_fasta:
             record.description += "; pfam: " + pfam_annotations.get(record.id)
           if transcript_id in rfam_annotations:
             record.description += "; rfam: " + rfam_annotations.get(transcript_id)
-          if record.id in tmhmm_annotations:
-            record.description += "; tmhmm: " + tmhmm_annotations.get(record.id)
           if record.id in signalp_annotations:
             record.description += "; signalp: " + signalp_annotations.get(record.id)
           if record.id in targetp_annotations:
