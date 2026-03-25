@@ -1,5 +1,6 @@
 ![transXpress](logo/Transxpress_Logo_RGB.png)
 
+### **See lab wiki for Weng Lab specific usage. This documentation is unchanged from that of the base tool.**
 transXpress: a [Snakemake](https://snakemake.readthedocs.io/en/stable/) pipeline for streamlined de novo transcriptome assembly and annotation
 
 ## Intro
