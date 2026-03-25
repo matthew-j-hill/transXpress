@@ -543,7 +543,7 @@ rule trinity_inchworm_chrysalis:
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
-    memory="200"
+    memory="256"
   threads:
     16
   shell:
@@ -639,7 +639,7 @@ rule trinity_final:
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
-    memory="200"
+    memory="256"
   threads:
     16
   shell:
