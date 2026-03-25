@@ -1520,7 +1520,7 @@ rule annotated_fasta:
           row = re.split(" +", line, 17)
           if (len(row) < 18): continue
           rfam_annotations[row[2]] = row[1] + " " + row[17] + "E=" + str(row[15])
-
+  
       ## Load signalp results
       print ("Loading signalp predictions from", input["signalp_results"], file=log_handle)
       with open(input["signalp_results"]) as input_handle:
