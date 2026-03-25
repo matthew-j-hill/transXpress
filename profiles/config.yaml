@@ -1,33 +1,66 @@
-# example profile config.yaml for slurm cluster
-# partition names will be different on different clusters
-
-cluster:
-  sbatch
-    --partition={resources.partition}
-    -n {threads}
-    --mem={params.memory}GB
-    -o {log}.slurm.out 
-    -e {log}.slurm.err 
-    --time={resources.time}
-    --parsable
-
-# specifying resources for jobs which require different resources - trinity_inchworm_chrysalis, trinity_final, rnaspades, align_reads
-set-resources:
-  - trinity_inchworm_chrysalis:partition="a36_768_long"
-  - trinity_inchworm_chrysalis:time="12:00:00"
-  - trinity_final:partition="a36_768_long"
-  - trinity_final:time="12:00:00"
-  - rnaspades:partition="a36_768_long"
-  - rnaspades:time="12:00:00"
-  - align_reads:partition="a36_192_long"
-  - align_reads:time="12:00:00"
-
+executor: slurm
 default-resources:
-  - partition="a36_any" 
-  - time="4:00:00"
-restart-times: 1
+    slurm_account: jingke.weng
+    slurm_partition: short
+    runtime: 2880
+    threads: 1
+    mem: 2gb
+set-resources:
+    trimmomatic_parallel:
+        mem: 10gb
+        threads: 4
+    fastqc_after_trim:
+        mem: 4gb
+    multiqc_after_trim:
+        mem: 4gb
+    trinity_inchworm_chrysalis:
+        slurm_partition: long
+        runtime: 7200
+        mem: 384gb
+        threads: 16
+    trinity_butterfly_parallel:
+        mem: 10gb
+    trinity_butterfly_parallel_merge:
+        mem: 10gb
+    trinity_final:
+        slurm_partition: long
+        runtime: 7200
+        mem: 256gb
+        threads: 16
+    rnaspades:
+        slurm_partition: long
+        runtime: 7200
+        mem: 256gb
+        threads: 16
+    busco:
+        mem: 10gb
+        threads: 4
+    transdecoder_predict:
+        mem: 10gb
+    align_reads:
+        mem: 128gb
+        threads: 16
+    rfam_parallel:
+        mem: 8gb
+        threads: 2
+    pfam_parallel:
+        threads: 2
+    sprot_blastp_parallel:
+        mem: 4gb
+        threads: 2
+    sprot_blastx_parallel:
+        mem: 4gb
+        threads: 2
+    signalp_parallel:
+        mem: 8gb
+    kallisto:
+        mem: 16gb
+        threads: 8    
+    annotated_fasta:
+        mem: 4gb
+restart-times: 2
 latency-wait: 60
-jobs: 5000
+jobs: 1000
 rerun-incomplete: True
-conda-frontend: "conda"
+conda-frontend: conda
 use-conda: True
