@@ -663,7 +663,7 @@ rule rnaspades:
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rnaspades"
   params:
-    memory="200"
+    memory="256"
   threads:
     16
   shell:
