@@ -19,6 +19,7 @@ set-resources:
         mem: 384gb
         threads: 16
     trinity_butterfly_parallel:
+        runtime: 240
         mem: 10gb
     trinity_butterfly_parallel_merge:
         mem: 10gb
