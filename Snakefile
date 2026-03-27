@@ -13,7 +13,7 @@ min_version("5.4.1")
 
 configfile: "config.yaml"
 
-# for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "seqkit", "R"]:
+# for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastp", "cmscan", "hmmscan", "fastqc", "seqkit", "R"]:
 #    if not shutil.which(executable):
 #        sys.stderr.write("Warning: Cannot find %s in your PATH\n" % (executable))
 
@@ -1030,8 +1030,8 @@ rule download_sprot:
   Downloads and prepares SwissProt database.
   """
   output:
-    "/projects/wenglab/testtube/matthew/db/transxpress/uniprot_sprot.fasta",
-    "/projects/wenglab/testtube/matthew/db/transxpress/uniprot_sprot.dmnd"
+    "db/uniprot_sprot.fasta",
+    "db/uniprot_sprot.dmnd"
   log:
     "logs/download_sprot.log"
   conda:
@@ -1053,7 +1053,7 @@ rule download_pfam:
   Downloads and prepares Pfam database.
   """
   output:
-    "/projects/wenglab/testtube/matthew/db/transxpress/Pfam-A.hmm"
+    "db/Pfam-A.hmm"
   log:
     "logs/download_pfam.log"
   conda:
@@ -1075,7 +1075,7 @@ rule download_rfam:
   Downloads and prepares Rfam database.
   """
   output:
-    "/projects/wenglab/testtube/matthew/db/transxpress/Rfam.cm"
+    "db/Rfam.cm"
   log:
     "logs/download_rfam.log"
   conda:
