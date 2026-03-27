@@ -411,13 +411,18 @@ rule trinity_butterfly_parallel:
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
-    memory="10"
+    memory="4"
   threads:
-    1
+    2
   shell:
     """
-    bash {input} &> {log}
-    cp -p {input} {output} &>> {log}
+    set -eo pipefail
+    while IFS= read -r cmd; do
+        [ -z "$cmd" ] && continue
+        echo "=== Running: $cmd" >> {log}
+        eval "$cmd" >> {log} 2>&1
+    done < {input}
+    cp -p {input} {output} >> {log} 2>&1
     """
 
 
