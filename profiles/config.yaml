@@ -39,12 +39,12 @@ set-resources:
         mem: 10gb
     rfam_parallel:
         mem: 8gb
-        threads: 2
+        threads: 4
     pfam_parallel:
-        threads: 2
+        threads: 4
     sprot_blastp_parallel:
         mem: 4gb
-        threads: 2
+        threads: 4
     signalp_parallel:
         mem: 8gb
     kallisto:

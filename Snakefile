@@ -679,10 +679,10 @@ checkpoint fasta_split_fasta:
       output_handle = None
       count = 0
       for record in Bio.SeqIO.parse(input_handle, "fasta"):
-        if (count % 1000 == 0):
+        if (count % 5000 == 0):
           if output_handle is not None:
             output_handle.close()
-          fileindex = str(int(count / 1000) + 1);
+          fileindex = str(int(count / 5000) + 1);
           filename = os.path.join(output[0], fileindex + ".fasta")
           output_handle = open(filename, "w");
         
@@ -715,10 +715,10 @@ checkpoint fasta_split_orfs:
       output_handle = None
       count = 0
       for record in Bio.SeqIO.parse(input_handle, "fasta"):
-        if (count % 1000 == 0):
+        if (count % 5000 == 0):
           if output_handle is not None:
             output_handle.close()
-          fileindex = str(int(count / 1000) + 1);
+          fileindex = str(int(count / 5000) + 1);
           filename = os.path.join(output[0], fileindex + ".orfs")
           output_handle = open(filename, "w");
         
@@ -750,10 +750,10 @@ checkpoint fasta_split_pep:
       output_handle = None
       count = 0
       for record in Bio.SeqIO.parse(input_handle, "fasta"):
-        if (count % 1000 == 0):
+        if (count % 5000 == 0):
           if output_handle is not None:
             output_handle.close()
-          fileindex = str(int(count / 1000) + 1);
+          fileindex = str(int(count / 5000) + 1);
           filename = os.path.join(output[0], fileindex + ".pep")
           output_handle = open(filename, "w");
         # Remove predicted stop codons, because some annotation tools do not like them (e.g. InterProScan) 
@@ -868,9 +868,9 @@ rule rfam_parallel:
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam"
   params:
-    memory="8" # increased memory from 2 to 8 becuase it was not sufficient
+    memory="8"
   threads:
-    2
+    4
   shell:
     """
     cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[db]} {input[fasta]} &> {log}
@@ -893,7 +893,7 @@ rule pfam_parallel:
   params:
     memory="2"
   threads:
-    2
+    4
   shell:
     """
     # Transdecoder requires --domtblout output
@@ -917,7 +917,7 @@ rule sprot_blastp_parallel:
   params:
     memory="4"
   threads:
-    2
+    4
   shell:
     """
     blastp -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
