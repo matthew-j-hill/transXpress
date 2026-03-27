@@ -9,8 +9,12 @@ set-resources:
     trimmomatic_parallel:
         mem: 10gb
         threads: 4
+    fastqc_before_trim:
+        mem: 4gb
+        threads: 4
     fastqc_after_trim:
         mem: 4gb
+        threads: 4
     multiqc_after_trim:
         mem: 4gb
     trinity_inchworm_chrysalis:

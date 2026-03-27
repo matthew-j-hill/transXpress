@@ -80,15 +80,12 @@ rule fastqc_before_trim:
   params:
     memory="4"
   threads:
-    1
+    4
   shell:
     """
-    # run fastqc on input files
-    # making directory for the fastqc summary files
     mkdir {output} &> {log}
-    FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
-    # running fasqc on the files
-    for file in $FILES; do fastqc -f fastq -o {output} $file; done &>> {log}
+    FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input})
+    fastqc -f fastq -t {threads} -o {output} $FILES &>> {log}
     """
 
 
@@ -262,15 +259,12 @@ rule fastqc_after_trim:
   params:
     memory="4"
   threads:
-    1
+    4
   shell:
     """
-    # run fastqc on input files
-    # making directory for the fastqc summary files
     mkdir {output} &> {log}
-    FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input}) &>> {log}
-    # running fasqc on the files
-    for file in $FILES; do fastqc -f fastq -o {output} $file; done &>> {log}
+    FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input})
+    fastqc -f fastq -t {threads} -o {output} $FILES &>> {log}
     """
 
 
