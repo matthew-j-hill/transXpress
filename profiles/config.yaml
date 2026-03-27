@@ -1,4 +1,5 @@
 executor: slurm
+scheduler: greedy
 default-resources:
     slurm_account: jingke.weng
     slurm_partition: short
