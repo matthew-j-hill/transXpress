@@ -392,9 +392,9 @@ checkpoint trinity_butterfly_split:
   shell:
     """
     mkdir -p {output} &> {log}
-    # Note: it is important to use -d and not --numeric-suffixes, see https://github.com/transXpress/transXpress-snakemake/issues/12
-    # Note #2: we split into 1000 chunks to avoid running over the command line limit when too many parallel jobs are created, see https://bitbucket.org/snakemake/snakemake/issues/878/errno-7-argument-list-too-long-path-to-bin 
-    split -n l/1000 -e -d {input} {output}/job_ &>> {log}
+    sed 's/--max_memory [^ ]*/--max_memory {params.memory}G/g; s/--CPU [0-9]*/--CPU {params.cpus}/g' {input} | shuf > {output}/shuffled_cmds.tmp 2>> {log}
+    split -n l/1000 -e -d {output}/shuffled_cmds.tmp {output}/job_ &>> {log}
+    rm {output}/shuffled_cmds.tmp &>> {log}
     """
 
 
