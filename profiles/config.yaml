@@ -28,28 +28,17 @@ set-resources:
         runtime: 7200
         mem: 256gb
         threads: 16
-    rnaspades:
-        slurm_partition: long
-        runtime: 7200
-        mem: 256gb
-        threads: 16
     busco:
         mem: 10gb
         threads: 4
     transdecoder_predict:
         mem: 10gb
-    align_reads:
-        mem: 128gb
-        threads: 16
     rfam_parallel:
         mem: 8gb
         threads: 2
     pfam_parallel:
         threads: 2
     sprot_blastp_parallel:
-        mem: 4gb
-        threads: 2
-    sprot_blastx_parallel:
         mem: 4gb
         threads: 2
     signalp_parallel:

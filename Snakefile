@@ -13,7 +13,7 @@ min_version("5.4.1")
 
 configfile: "config.yaml"
 
-# for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastx", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "rnaspades.py", "seqkit", "R"]:
+# for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastp", "makeblastdb", "cmscan", "hmmscan", "fastqc", "seqkit", "R"]:
 #    if not shutil.which(executable):
 #        sys.stderr.write("Warning: Cannot find %s in your PATH\n" % (executable))
 
@@ -23,7 +23,7 @@ configfile: "config.yaml"
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
 # These rules don't need to be sent to a cluster
-localrules: all, clean, trimmomatic_split, trimmomatic_merge, samples_yaml_conversion, trinity_butterfly_split, transcriptome_copy, compare_qc_after_trim, fastqc_before_trim_warnings, IGV
+localrules: all, clean, trimmomatic_split, trimmomatic_merge, trinity_butterfly_split, transcriptome_copy, compare_qc_after_trim, fastqc_before_trim_warnings
 
 
 rule all:
@@ -61,7 +61,7 @@ rule clean:
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* rnaspades_* tmp* log TMHMM* kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
+    rm -rf trinity_* tmp* log kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
     """
 
 
@@ -361,59 +361,6 @@ fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_
         print(line.strip())
       print('See this output in FastQC_comparison_after_trim.txt')
 
-rule samples_yaml_conversion:
-  """
-  Converts the file with information about all trimmed reads files into a yaml
-  format used by rnaSPAdes.
-  """
-  input:
-    samples_txt="samples_trimmed.txt"
-  output:
-    samples_yaml="samples_trimmed.yaml"
-  log:
-    "logs/samples_yaml_conversion.log"
-  run:
-    import os
-    import os.path
-    import pprint
-
-    sample_list = []
-    with open(input["samples_txt"], "r") as input_handle:
-      for line in input_handle:
-        row = re.split("[\t ]+", line)
-        if (len(row) > 3): # paired reads
-          paired_dict = {}
-          paired_dict['orientation'] = 'fr'
-          paired_dict['type'] = 'paired-end'
-          f_reads = row[2].strip()
-          r_reads = row[3].strip()
-          assert os.path.isfile(f_reads)
-          assert os.path.isfile(r_reads)
-          paired_dict['left reads'] = [f_reads]
-          paired_dict['right reads'] = [r_reads]
-          ##Depends on where the unpaired reads are written to
-          ##Presumably could get from sample txt as well
-          ##Note: Commented out, to make it consistent with Trinity. May change in future
-          ##unpaired_reads_f = f[:-16]+"U.qtrim.fastq.gz"
-          ##unpaired_reads_r = r[:-16]+"U.qtrim.fastq.gz"
-          ##assert os.path.isfile(unpaired_reads_f)
-          ##assert os.path.isfile(unpaired_reads_r)
-          ##unpaired_reads = [unpaired_reads_f] + [unpaired_reads_r]
-          ##if len(unpaired_reads) > 0:
-          ##    sample_dict['single reads'] = unpaired_reads
-          sample_list.append(paired_dict)
-
-        if (len(row) == 3): # unpaired reads
-          unpaired_dict = {}
-          unpaired_dict['type'] = 'single'
-          u_reads = row[2].strip()
-          assert os.path.isfile(u_reads)
-          unpaired_dict['single reads'] = [u_reads]
-          sample_list.append(unpaired_dict)
-
-    with open(output["samples_yaml"], "w") as output_handle:
-      output_handle.write(pprint.pformat(sample_list))
-
 
 rule trinity_inchworm_chrysalis:
   """
@@ -532,40 +479,13 @@ rule trinity_final:
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
-
-rule rnaspades:
-  """
-  Runs rnaSPAdes assembly.
-  """
-  input:
-    samples="samples_trimmed.yaml",
-  output:
-    transcriptome="rnaspades_out/transcripts.fasta",
-    ##config["annotated_fasta_prefix"]+"_spades_out/K"+THEKMER+"/assembly_graph_with_scaffolds.gfa"
-    gene_trans_map="rnaspades_out/transcripts.gene_trans_map"
-  log:
-    "logs/rnaspades.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rnaspades"
-  params:
-    memory="256"
-  threads:
-    16
-  shell:
-    """
-    rnaspades.py --dataset {input.samples} -t {threads} -m {params.memory} -o rnaspades_out {config[strand_specific]} --only-assembler {config[kmers]} &> {log}
-    ##Make a fake gene_trans_map file
-    seqkit seq -n {output.transcriptome} | while read id ; do echo -e "$id\\t$id" ; done > {output.gene_trans_map} 2>> {log}
-    """
- 
-
 rule transcriptome_copy:
   """
   Copies the assembled transcriptome to the transxpress directory.
   """
   input:
-    transcriptome=rules.rnaspades.output.transcriptome if config["assembler"]=="rnaspades" else rules.trinity_final.output.transcriptome,
-    gene_trans_map=rules.rnaspades.output.gene_trans_map if config["assembler"]=="rnaspades" else rules.trinity_final.output.gene_trans_map,
+    transcriptome=rules.trinity_final.output.transcriptome,
+    gene_trans_map=rules.trinity_final.output.gene_trans_map,
   output:
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map",
@@ -608,12 +528,7 @@ rule trinity_stats:
     """
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
 
-    assembler={config[assembler]}
-    if [ "$assembler" = 'trinity' ]; then
-        $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
-    else
-        $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} | sed -e 's/trinity/rnaspades/g' > {output.stats} 2> {log}
-    fi
+    $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
     $TRINITY_HOME/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
     $TRINITY_HOME/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
     """
@@ -704,101 +619,6 @@ rule transdecoder_predict:
     """
     TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
     cp -p transdecoder/{input.transcriptome}.transdecoder.pep {output} &>> {log}
-    """
-
-
-checkpoint align_reads:
-  """
-  Not run by default.
-  Runs Trinity script aligning the reads to the transcriptome using Bowtie2
-  and estimating the abundance with RSEM.
-  """
-  input:
-    samples=config["samples_file"],
-    transcriptome="transcriptome.fasta",
-    gene_trans_map="transcriptome.gene_trans_map"
-  output:
-    "transcriptome.fasta.bowtie2.ok"
-  log:
-    "logs/bowtie2.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
-  params:
-    memory="100"
-  threads:
-    16
-  shell:
-    """
-    TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
-
-
-    assembler="{config[assembler]}"
-    strand_specific="{config[strand_specific]}"
-    
-    if [ $assembler = "rnaspades" ]
-    then
-      if [[ $strand_specific = "--ss rf" ]]
-      then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type RF --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &> {log}
-      elif [[ $strand_specific = "--ss fr" ]]
-      then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} --SS_lib_type FR --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
-      else
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
-      fi
-    else
-      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input[1]} {config[strand_specific]} --seqType fq --samples_file {input[0]} --prep_reference --thread_count {threads} --est_method RSEM --aln_method bowtie2 --gene_trans_map {input[2]} &>> {log}
-    fi
-    """
-
-checkpoint prepare_samples_for_IGV:
-  """
-  Not run by default.
-  Moves bam alignment files to bowtie_alignments directory
-  and prepares the files to be used by IGV by sorting and 
-  indexing them.
-  """
-  input:
-    alignment="{sample}/bowtie2.bam"
-  output:
-    alignment="bowtie_alignments/{sample}.bam",
-    sorted_alignment="bowtie_alignments/{sample}.sorted.bam",
-    indexed_alignment="bowtie_alignments/{sample}.sorted.bam.bai"
-  log:
-    "logs/prepare_for_IGV_{sample}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    cp {input.alignment} {output.alignment} &> {log}
-    samtools sort --threads {threads} -o {output.sorted_alignment} {output.alignment} &>> {log}
-    samtools index {output.sorted_alignment} &>> {log}
-    """ 
-
-def get_igv(wildcards):
-  indeces = glob_wildcards("{sample}/bowtie2.bam").sample
-  completed = expand(os.path.join("bowtie_alignments", "{sample}.sorted.bam.bai"),sample=indeces)
-  return completed
-
-rule IGV:
-  """
-  Not run by default.
-  Rule to be called to get all bowtie alignments ready for IGV.
-  """
-  input:
-    get_igv,
-    "transcriptome.fasta.bowtie2.ok"
-  output:
-    "igv.ok"
-  log:
-    "logs/IGV_combine.log"
-  shell:
-    """
-    touch {output}
     """
 
 rule trinity_DE:
@@ -1105,28 +925,6 @@ rule sprot_blastp_parallel:
     """
 
 
-rule sprot_blastx_parallel:
-  """
-  Runs blast search on SwissProt database on smaller nucleotide files in parallel.
-  """
-  input:
-    fasta="annotations/chunks_fasta/{index}.fasta",
-    db="db/uniprot_sprot.fasta"
-  output:
-    "annotations/sprotblastx/{index}.out"
-  log:
-    "logs/sprotblastx_{index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
-  params:
-    memory="4"
-  threads:
-    2
-  shell:
-    """
-    blastx -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
-    """
-
 rule signalp_parallel:
   """
   Runs signalp on smaller protein files in parallel to predict signal peptides.
@@ -1150,6 +948,7 @@ rule signalp_parallel:
     mv signalp_{wildcards.index}/prediction_results.txt {output}
     rm -r signalp_{wildcards.index}
     """
+
 
 rule targetp_parallel:
   """
@@ -1202,21 +1001,7 @@ rule kallisto:
 
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
-
-    if [ $assembler = "rnaspades" ]
-    then
-      if [[ $strand_specific = "--ss rf" ]]
-      then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type RF --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
-      elif [[ $strand_specific = "--ss fr" ]]
-      then
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --SS_lib_type FR --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
-      else
-        $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
-      fi
-    else
-      $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
-    fi
+    $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
     
     $TRINITY_HOME/util/abundance_estimates_to_matrix.pl --est_method kallisto --name_sample_by_basedir --gene_trans_map {input.gene_trans_map} */abundance.tsv &>> {log}
     if [ -f kallisto.isoform.TMM.EXPR.matrix ]; then
@@ -1304,26 +1089,6 @@ rule download_rfam:
     """
 
 
-rule download_eggnog:
-  """
-  For future development.
-  Downloads eggnog database.
-  """
-  output:
-    "db/NOG.annotations.tsv"
-  log:
-    "logs/download_eggnog.log"
-  params:
-    memory="2"
-  threads:
-    1
-  shell:
-    """
-    wget --directory-prefix db "http://eggnogdb.embl.de/download/latest/data/NOG/NOG.annotations.tsv.gz" &> {log}    
-    gunzip db/NOG.annotations.tsv.gz &>> {log}
-    """
-
-
 rule annotated_fasta:
   """
   Puts annotations in the headers of transcripts/proteins in the 
@@ -1333,7 +1098,6 @@ rule annotated_fasta:
     transcriptome="transcriptome.fasta",
     proteome="transcriptome.pep",
     expression="transcriptome_expression_isoform.tsv",
-    blastx_results="annotations/sprotblastx_fasta.out",
     rfam_results="annotations/rfam_fasta.out",
     blastp_results="annotations/sprotblastp_orfs.out",
     pfam_results="annotations/pfam_orfs.out",
@@ -1354,7 +1118,6 @@ rule annotated_fasta:
     with open(log[0], "w") as log_handle:
       ## Annotation map: transcript id -> description
       expression_annotations = {}
-      blastx_annotations = {}
       blastp_annotations = {}
       pfam_annotations = {}
       rfam_annotations = {}
@@ -1371,14 +1134,6 @@ rule annotated_fasta:
           for i in range(2, len(columns)):
             expression_annotations[row[0]] += " " + columns[i] + "=" + str(row[i])
 
-      ## Load blastx results
-      print ("Loading blastx results from", input["blastx_results"], file=log_handle)
-      with open(input["blastx_results"]) as input_handle:
-        csv_reader = csv.reader(input_handle, delimiter="\t")
-        for row in csv_reader:
-          if (len(row) < 13): continue
-          blastx_annotations[row[0]] = row[12] + " E=" + str(row[10])
-  
       ## Load blastp results
       print ("Loading blastp results from", input["blastp_results"], file=log_handle)
       with open(input["blastp_results"]) as input_handle:
@@ -1450,8 +1205,8 @@ rule annotated_fasta:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
           record.description = "TPM: " + expression_annotations.get(transcript_id)
-          if transcript_id in blastx_annotations:
-            record.description += "; blastx: " + blastx_annotations.get(transcript_id)
+          if transcript_id in blastp_annotations:
+            record.description += "; blastp: " + blastp_annotations.get(transcript_id)
           if transcript_id in rfam_annotations:
             record.description += "; rfam: " + rfam_annotations.get(transcript_id)
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
@@ -1486,10 +1241,10 @@ rule annotated_fasta:
         csv_columns[0] = "transcript"
         for i in range(1, len(csv_columns)):
           csv_columns[i] = "TPM(" + csv_columns[i] + ")"
-        csv_columns.append("blastx")
+        csv_columns.append("blastp")
         csv_writer.writerow(csv_columns)
         for row in csv_reader:
-          row.append(blastx_annotations.get(row[0], ""))
+          row.append(blastp_annotations.get(row[0], ""))
           csv_writer.writerow(row)
 
 
