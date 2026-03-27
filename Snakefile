@@ -903,11 +903,11 @@ rule pfam_parallel:
 
 rule sprot_blastp_parallel:
   """
-  Runs blast search on SwissProt database on smaller protein files in parallel.
+  Runs DIAMOND blastp search on SwissProt database on smaller protein files in parallel.
   """
   input:
     fasta="annotations/chunks_orfs/{index}.orfs",
-    db="db/uniprot_sprot.fasta"
+    db="db/uniprot_sprot.dmnd"
   output:
     "annotations/sprotblastp/{index}.out"
   log:
@@ -920,7 +920,7 @@ rule sprot_blastp_parallel:
     4
   shell:
     """
-    blastp -query {input[fasta]} -db {input[db]} -num_threads {threads} -evalue {config[e_value_threshold]} -max_hsps 1 -max_target_seqs 1 -outfmt "6 std stitle" -out {output} &> {log}
+    diamond blastp --query {input[fasta]} --db {input[db]} --threads {threads} --evalue {config[e_value_threshold]} --max-hsps 1 --max-target-seqs 1 --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle --out {output} &> {log}
     """
 
 
@@ -1027,20 +1027,21 @@ rule download_sprot:
   Downloads and prepares SwissProt database.
   """
   output:
-    "db/uniprot_sprot.fasta"
+    "/projects/wenglab/testtube/matthew/db/transxpress/uniprot_sprot.fasta",
+    "/projects/wenglab/testtube/matthew/db/transxpress/uniprot_sprot.dmnd"
   log:
     "logs/download_sprot.log"
   conda:
     "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
   params:
-    memory="2"
+    memory="4"
   threads:
     1
   shell:
     """
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
     gunzip db/uniprot_sprot.fasta.gz &>> {log}
-    makeblastdb -in db/uniprot_sprot.fasta -dbtype prot &>> {log}
+    diamond makedb --in db/uniprot_sprot.fasta -d db/uniprot_sprot &>> {log}
     """
 
 
@@ -1049,7 +1050,7 @@ rule download_pfam:
   Downloads and prepares Pfam database.
   """
   output:
-    "db/Pfam-A.hmm"
+    "/projects/wenglab/testtube/matthew/db/transxpress/Pfam-A.hmm"
   log:
     "logs/download_pfam.log"
   conda:
@@ -1071,7 +1072,7 @@ rule download_rfam:
   Downloads and prepares Rfam database.
   """
   output:
-    "db/Rfam.cm"
+    "/projects/wenglab/testtube/matthew/db/transxpress/Rfam.cm"
   log:
     "logs/download_rfam.log"
   conda:

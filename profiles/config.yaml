@@ -37,6 +37,8 @@ set-resources:
         threads: 4
     transdecoder_predict:
         mem: 10gb
+    download_sprot:
+        mem: 4gb
     rfam_parallel:
         mem: 8gb
         threads: 4
