@@ -389,6 +389,9 @@ checkpoint trinity_butterfly_split:
     directory("trinity_out_dir/parallel_jobs")
   log:
     "logs/trinity_split.log"
+  params:
+    memory="4",
+    cpus="2"
   shell:
     """
     mkdir -p {output} &> {log}
