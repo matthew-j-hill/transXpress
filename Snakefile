@@ -543,24 +543,14 @@ rule busco:
     4
   shell:
     """
-    lineage={config[lineage]} &> {log}
-    if [ -z "$lineage"] &>> {log}
-    then &>> {log}
-      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} --auto-lineage -c {threads} &>> {log}
-    else &>> {log}
-      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} -l $lineage -c {threads} &>> {log}
-    fi &>> {log}
-
-    status=$?
-
-    if [ $status -eq 0 ]
-    then
-      echo "BUSCO run completed successfully" &>> {log}
-      cp busco/short_summary*.txt {output.report} &>> {log}
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-busco
+    lineage={config[lineage]}
+    if [ -z "$lineage" ]; then
+      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} --auto-lineage -c {threads} &> {log}
     else
-      echo "BUSCO run failed" &>> {log}
-      exit 1 &>> {log}
+      busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} -l $lineage -c {threads} &> {log}
     fi
+    cp busco/short_summary*.txt {output.report} &>> {log}
     """
 
 rule transdecoder_longorfs:
@@ -629,18 +619,15 @@ rule trinity_DE:
     """
     source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
-
-
-    num_replicates=`awk '{{print $2}}' {input.samples} | sort | uniq | wc -l` &> {log}
-    num_samples=`awk '{{print $1}}' {input.samples} | sort | uniq | wc -l` &>> {log}
-    num_replicates_minus_samples=$((num_replicates - num_samples)) &>> {log}
-    if [ $num_replicates_minus_samples -gt 1 ] &>> {log}
-    then &>> {log}
-	    $TRINITY_HOME/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &>> {log}
-    else &>> {log}
-	    echo "No biological replicates to run proper differential expression analysis, last-resorting to edgeR with --dispersion 0.1" &>> {log}
+    num_replicates=$(awk '{{print $2}}' {input.samples} | sort | uniq | wc -l)
+    num_samples=$(awk '{{print $1}}' {input.samples} | sort | uniq | wc -l)
+    num_replicates_minus_samples=$((num_replicates - num_samples))
+    if [ $num_replicates_minus_samples -gt 1 ]; then
+      $TRINITY_HOME/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} &> {log}
+    else
+      echo "No biological replicates to run proper differential expression analysis, last-resorting to edgeR with --dispersion 0.1" &> {log}
       $TRINITY_HOME/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix {input.expression} --method edgeR --output {output} --samples_file {input.samples} --dispersion {config[dispersion]} &>> {log}
-    fi &>> {log}
+    fi
     """
 
 
@@ -1183,7 +1170,7 @@ rule annotated_fasta:
       with open(input["transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
-          record.description = "TPM: " + expression_annotations.get(transcript_id)
+          record.description = "TPM: " + expression_annotations.get(transcript_id, "N/A")
           if transcript_id in blastp_annotations:
             record.description += "; blastp: " + blastp_annotations.get(transcript_id)
           if transcript_id in rfam_annotations:
