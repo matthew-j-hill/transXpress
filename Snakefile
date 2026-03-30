@@ -49,7 +49,8 @@ rule all:
     "multiqc_after_trim.txt",
     "WARNING_fastqc_before_trim_overview.txt",
     "FastQC_comparison_after_trim.txt",
-    "edgeR_trans"
+    "edgeR_trans",
+    "db/db_versions.txt"
 
 rule clean:
   """
@@ -1225,4 +1226,35 @@ rule annotated_fasta:
           row.append(blastp_annotations.get(row[0], ""))
           csv_writer.writerow(row)
 
+
+rule db_versions:
+  """
+  Records database versions and download dates for reproducibility.
+  """
+  input:
+    sprot="db/uniprot_sprot.fasta",
+    pfam="db/Pfam-A.hmm",
+    rfam="db/Rfam.cm"
+  output:
+    "db/db_versions.txt"
+  shell:
+    """
+    echo "Database versions (recorded $(date -I))" > {output}
+    echo "" >> {output}
+
+    echo "=== UniProt/SwissProt ===" >> {output}
+    grep -m1 "^Release:" {input.sprot} >> {output} 2>/dev/null || \
+      head -1 {input.sprot} | grep -oP 'OX=|RepBase' >> {output} 2>/dev/null || \
+      echo "Version: unknown (downloaded $(stat -c %y {input.sprot} | cut -d' ' -f1))" >> {output}
+
+    echo "" >> {output}
+    echo "=== Pfam ===" >> {output}
+    grep -m1 "^#.*Pfam" {input.pfam} >> {output} 2>/dev/null || \
+      echo "Version: unknown (downloaded $(stat -c %y {input.pfam} | cut -d' ' -f1))" >> {output}
+
+    echo "" >> {output}
+    echo "=== Rfam ===" >> {output}
+    grep -m1 "^#.*Rfam" {input.rfam} >> {output} 2>/dev/null || \
+      echo "Version: unknown (downloaded $(stat -c %y {input.rfam} | cut -d' ' -f1))" >> {output}
+    """
 
