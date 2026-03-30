@@ -1,5 +1,4 @@
 executor: slurm
-scheduler: greedy
 default-resources:
     slurm_account: jingke.weng
     slurm_partition: short
@@ -60,5 +59,3 @@ restart-times: 2
 latency-wait: 60
 jobs: 1000
 rerun-incomplete: True
-conda-frontend: conda
-use-conda: True

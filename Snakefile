@@ -75,14 +75,13 @@ rule fastqc_before_trim:
     directory("fastqc_before_trim")
   log:
     "logs/fastqc_before_trim.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
     4
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     mkdir {output} &> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input})
     fastqc -f fastq -t {threads} -o {output} $FILES &>> {log}
@@ -100,14 +99,13 @@ rule multiqc_before_trim:
     report="multiqc_before_trim.txt"
   log:
     "logs/multiqc_before_trim.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     # common error resolved by those two export commands
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
@@ -194,14 +192,13 @@ rule trimmomatic_parallel:
     "trimmomatic/completed_{job_index}"
   log:
     "logs/trimmomatic_parallel{job_index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trimmomatic"
   params:
     memory="10"
   threads:
     4
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trimmomatic
     # note: trimmomatic can use gzipped files directly
     read SAMPLE REPLICATE F_READS R_READS < {input}
     # If the sample line is empty, ignore it
@@ -254,14 +251,13 @@ rule fastqc_after_trim:
     directory("fastqc_after_trim")
   log:
     "logs/fastqc_after_trim.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
     4
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     mkdir {output} &> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input})
     fastqc -f fastq -t {threads} -o {output} $FILES &>> {log}
@@ -279,14 +275,13 @@ rule multiqc_after_trim:
     report="multiqc_after_trim.txt"
   log:
     "logs/multiqc_after_trim.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc"
   params:
     memory="4"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     # common error resolved by those two export commands
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
@@ -366,14 +361,13 @@ rule trinity_inchworm_chrysalis:
     "trinity_out_dir/recursive_trinity.cmds"
   log:
     "logs/trinity_inchworm_chrysalis.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="256"
   threads:
     16
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &> {log}
     """
 
@@ -411,14 +405,13 @@ rule trinity_butterfly_parallel:
     "trinity_out_dir/parallel_jobs/completed_{job_index}"
   log:
     "logs/trinity_parallel{job_index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="4"
   threads:
     2
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     set -eo pipefail
     while IFS= read -r cmd; do
         [ -z "$cmd" ] && continue
@@ -470,14 +463,13 @@ rule trinity_final:
     gene_trans_map="trinity_out_dir.Trinity.fasta.gene_trans_map" #according to trinity dev, this is a feature, not a bug
   log:
     "logs/trinity_final.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="256"
   threads:
     16
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     """
 
@@ -520,16 +512,14 @@ rule trinity_stats:
     exN50plot="ExN50_plot.pdf"
   log:
     "logs/trinity_exN50.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
-
     $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
     $TRINITY_HOME/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
     $TRINITY_HOME/util/misc/plot_ExN50_statistic.Rscript {output.exN50} &>> {log}
@@ -546,8 +536,6 @@ rule busco:
     report="busco_report.txt"
   log:
     "logs/busco.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-busco"
   params:
     memory="10"
   threads:
@@ -584,14 +572,13 @@ rule transdecoder_longorfs:
     orfs="transcriptome.orfs"
   log:
     "logs/transdecoder_longorfs.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder
     rm -rf {input.transcriptome}.transdecoder_dir &> {log}
     TransDecoder.LongOrfs -t {input.transcriptome} --output_dir transdecoder &>> {log} 
     cp -p transdecoder/{input.transcriptome}.transdecoder_dir/longest_orfs.pep {output.orfs} &>> {log}
@@ -611,14 +598,13 @@ rule transdecoder_predict:
     "transcriptome.pep"
   log:
     "logs/transdecoder_predict.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder"
   params:
     memory="10"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder
     TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
     cp -p transdecoder/{input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
@@ -634,14 +620,13 @@ rule trinity_DE:
     directory("edgeR_trans")
   log:
     "logs/trinity_DE.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
 
 
@@ -868,14 +853,13 @@ rule rfam_parallel:
     "annotations/rfam/{index}.out"
   log:
     "logs/rfam_{index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam"
   params:
     memory="8"
   threads:
     4
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam
     cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[db]} {input[fasta]} &> {log}
     """
 
@@ -891,14 +875,13 @@ rule pfam_parallel:
     "annotations/pfam/{index}.out"
   log:
     "logs/pfam_{index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam"
   params:
     memory="2"
   threads:
     4
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam
     # Transdecoder requires --domtblout output
     hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[db]} {input[fasta]} &> {log}
     """
@@ -915,14 +898,13 @@ rule sprot_blastp_parallel:
     "annotations/sprotblastp/{index}.out"
   log:
     "logs/sprotblastp{index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
   params:
     memory="4"
   threads:
     4
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast
     diamond blastp --query {input[fasta]} --db {input[db]} --threads {threads} --evalue {config[e_value_threshold]} --max-hsps 1 --max-target-seqs 1 --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle --out {output} &> {log}
     """
 
@@ -937,14 +919,13 @@ rule signalp_parallel:
     "annotations/signalp/{index}.out"
   log:
     "logs/signalp_{index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/signalp"
   params:
     memory="8"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/signalp
     mkdir -p annotations/signalp &> {log}
     signalp6 --fastafile {input} --organism eukarya --output_dir signalp_{wildcards.index} --format none --mode fast &>> {log}
     mv signalp_{wildcards.index}/prediction_results.txt {output}
@@ -963,14 +944,13 @@ rule targetp_parallel:
     "annotations/targetp/{index}.out"
   log:
     "logs/targetp_{index}.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/targetp"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    /projects/wenglab/testtube/matthew/miniforge3/envs/targetp
     targetp -fasta {input} -format short -org {config[targetp]} -prefix {wildcards.index} &> {log}
     mv {wildcards.index}_summary.targetp2 {output} &>> {log}
     """
@@ -991,16 +971,14 @@ rule kallisto:
     "kallisto.gene.counts.matrix"
   log:
     "logs/kallisto.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils"
   params:
     memory="16" # increased memory from 2 to 8 since it was not sufficient
   threads:
     8
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
-
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
     $TRINITY_HOME/util/align_and_estimate_abundance.pl --transcripts {input.transcriptome} {config[strand_specific]} --seqType fq --samples_file {input.samples} --prep_reference --thread_count {threads} --est_method kallisto --gene_trans_map {input.gene_trans_map} &> {log}
@@ -1034,14 +1012,13 @@ rule download_sprot:
     "db/uniprot_sprot.dmnd"
   log:
     "logs/download_sprot.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast"
   params:
     memory="4"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
     gunzip db/uniprot_sprot.fasta.gz &>> {log}
     diamond makedb --in db/uniprot_sprot.fasta -d db/uniprot_sprot &>> {log}
@@ -1056,14 +1033,13 @@ rule download_pfam:
     "db/Pfam-A.hmm"
   log:
     "logs/download_pfam.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz" &> {log}
     gunzip db/Pfam-A.hmm.gz &>> {log}
     hmmpress db/Pfam-A.hmm &>> {log}
@@ -1078,14 +1054,13 @@ rule download_rfam:
     "db/Rfam.cm"
   log:
     "logs/download_rfam.log"
-  conda:
-    "/projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam"
   params:
     memory="2"
   threads:
     1
   shell:
     """
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz" &> {log}
     gunzip db/Rfam.cm.gz &>> {log}
     cmpress db/Rfam.cm &>> {log}    
