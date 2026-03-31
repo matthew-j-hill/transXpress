@@ -1108,6 +1108,13 @@ rule annotated_fasta:
           if (len(row) < 13): continue
           blastp_annotations[row[0]] = row[12] + " E=" + str(row[10])
 
+      ## make transcript-level blastp lookup (use best/first ORF hit per transcript)
+      blastp_by_transcript = {}
+      for orf_id, annotation in blastp_annotations.items():
+          transcript_id = re.sub(r"\.p[0-9]+$", "", orf_id)
+          if transcript_id not in blastp_by_transcript:
+              blastp_by_transcript[transcript_id] = annotation
+
       ## Load pfam results
       print ("Loading pfam predictions from", input["pfam_results"], file=log_handle)
       with open(input["pfam_results"]) as input_handle:
@@ -1170,7 +1177,7 @@ rule annotated_fasta:
       with open(input["transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
-          record.description = "TPM: " + expression_annotations.get(transcript_id, "N/A")
+          record.description = "TPM: " + expression_by_transcript.get(transcript_id, "N/A")
           if transcript_id in blastp_annotations:
             record.description += "; blastp: " + blastp_annotations.get(transcript_id)
           if transcript_id in rfam_annotations:
@@ -1210,7 +1217,7 @@ rule annotated_fasta:
         csv_columns.append("blastp")
         csv_writer.writerow(csv_columns)
         for row in csv_reader:
-          row.append(blastp_annotations.get(row[0], ""))
+          row.append(blastp_by_transcript.get(row[0], ""))
           csv_writer.writerow(row)
 
 
