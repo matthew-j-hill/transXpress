@@ -938,7 +938,9 @@ rule targetp_parallel:
     1
   shell:
     """
-    /projects/wenglab/testtube/matthew/miniforge3/envs/targetp
+    source /projects/wenglab/testtube/matthew/miniforge3/etc/profile.d/conda.sh
+    conda activate /projects/wenglab/testtube/matthew/miniforge3/envs/targetp
+    mkdir -p annotations/targetp &> {log}
     targetp -fasta {input} -format short -org {config[targetp]} -prefix {wildcards.index} &> {log}
     mv {wildcards.index}_summary.targetp2 {output} &>> {log}
     """
