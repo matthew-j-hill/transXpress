@@ -1179,9 +1179,9 @@ rule annotated_fasta:
       with open(input["transcriptome"], "r") as input_fasta_handle, open(output["transcriptome_annotated"], "w") as output_fasta_handle:
         for record in Bio.SeqIO.parse(input_fasta_handle, "fasta"):
           transcript_id = record.id
-          record.description = "TPM: " + expression_by_transcript.get(transcript_id, "N/A")
-          if transcript_id in blastp_annotations:
-            record.description += "; blastp: " + blastp_annotations.get(transcript_id)
+          record.description = "TPM: " + expression_annotations.get(transcript_id, "N/A")
+          if transcript_id in blastp_by_transcript:
+            record.description += "; blastp: " + blastp_by_transcript.get(transcript_id)
           if transcript_id in rfam_annotations:
             record.description += "; rfam: " + rfam_annotations.get(transcript_id)
           Bio.SeqIO.write(record, output_fasta_handle, "fasta")
