@@ -6,8 +6,11 @@
 # Note: must avoid spaces in filenames in samples.txt
 samples_file: "samples.txt"
 
-# trimmomatic is used for both trinity and rnaSPAdes
-trimmomatic_parameters: "ILLUMINACLIP:adapters.fasta:2:30:10 SLIDINGWINDOW:4:5 LEADING:5 TRAILING:5 MINLEN:25"
+# fastp trimming/filtering. Quality trimming is deliberately gentle (Q5): aggressive
+# trimming reduces de novo assembly completeness (MacManes 2014, Front Genet 5:13).
+# --trim_poly_g forces poly-G removal (2-colour chemistry) even when read headers
+# don't identify the instrument (e.g. SRA downloads).
+fastp_parameters: "--adapter_fasta adapters.fasta --detect_adapter_for_pe --trim_poly_g --cut_front --cut_tail --cut_mean_quality 5 --length_required 25"
 
 # set to trinity or rnaspades
 assembler: "trinity"
@@ -15,11 +18,7 @@ assembler: "trinity"
 # may consider canging TRINITY_PARAMS += "  --min_kmer_cov 1 --min_glue 2  --no_normalize_reads"
 trinity_parameters: "--seqType fq"
 
-# set the organism (plant or non-plant) for targetp: pl or non-pl
-targetp: "pl"
 
-# set the organism (eukarota or other) for SignalP: eukarya or other
-signalp: "eukarya"
 
 # Strand-specific RNA-Seq read orientation.
 #
@@ -34,10 +33,8 @@ signalp: "eukarya"
 #
 strand_specific: "--SS_lib_type RF"
 
-# Can be used for species name etc
-annotated_fasta_prefix: ""
 
-# For pfam, rfam, and blast searches
+# For Pfam (hmmsearch) and SwissProt (DIAMOND) searches used by TransDecoder.Predict
 e_value_threshold: "1e-6"
 
 # Dispersion value for edgeR differential expression analysis 
