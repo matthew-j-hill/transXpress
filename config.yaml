@@ -10,8 +10,7 @@ samples_file: "samples.txt"
 # trimming reduces de novo assembly completeness (MacManes 2014, Front Genet 5:13).
 # --trim_poly_g forces poly-G removal (2-colour chemistry) even when read headers
 # don't identify the instrument (e.g. SRA downloads).
-fastp_parameters: "--adapter_fasta adapters.fasta --detect_adapter_for_pe --trim_poly_g --cut_front --cut_tail --cut_mean_quality 5 --length_required 25"
-
+fastp_parameters: "--adapter_fasta adapters.fasta --detect_adapter_for_pe --correction --trim_poly_g --cut_front --cut_tail --cut_mean_quality 5 --length_required 25"
 # set to trinity or rnaspades
 assembler: "trinity"
 
