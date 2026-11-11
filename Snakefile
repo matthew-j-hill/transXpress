@@ -13,6 +13,27 @@ min_version("5.4.1")
 
 configfile: "config.yaml"
 
+# samples file: condition  replicate  R1  [R2]  (whitespace-separated, replicate names unique)
+SAMPLES = {}
+with open(config["samples_file"]) as fh:
+  for line in fh:
+    f = line.split()
+    if len(f) < 3 or f[0].startswith("#"):
+      continue
+    if f[1] in SAMPLES:
+      sys.exit("Duplicate replicate name in %s: %s" % (config["samples_file"], f[1]))
+    SAMPLES[f[1]] = {"condition": f[0], "r1": f[2], "r2": f[3] if len(f) > 3 else None}
+PE = [r for r in SAMPLES if SAMPLES[r]["r2"]]
+SE = [r for r in SAMPLES if not SAMPLES[r]["r2"]]
+
+def _alt(names):
+  return "|".join(re.escape(n) for n in names) if names else "(?!)"
+
+def trimmed_reads(rep):
+  if SAMPLES[rep]["r2"]:
+    return ["trimmed/%s_R1.fastq.gz" % rep, "trimmed/%s_R2.fastq.gz" % rep]
+  return ["trimmed/%s.fastq.gz" % rep]
+
 # for executable in ["samtools", "bowtie2", "kallisto", "signalp6", "targetp", "Trinity", "blastp", "cmscan", "hmmscan", "fastqc", "seqkit", "R"]:
 #    if not shutil.which(executable):
 #        sys.stderr.write("Warning: Cannot find %s in your PATH\n" % (executable))
@@ -23,7 +44,7 @@ configfile: "config.yaml"
 # https://github.com/griffithlab/rnaseq_tutorial/wiki/Trinity-Assembly-And-Analysis
 
 # These rules don't need to be sent to a cluster
-localrules: all, clean, trimmomatic_split, trimmomatic_merge, trinity_butterfly_split, transcriptome_copy, compare_qc_after_trim, fastqc_before_trim_warnings
+localrules: all, clean, samples_trimmed, transcriptome_copy, compare_qc_after_trim, fastqc_before_trim_warnings
 
 
 rule all:
@@ -62,7 +83,7 @@ rule clean:
     if [ -f samples_trimmed.txt ]; then
       cut -f 2 < samples_trimmed.txt | xargs --no-run-if-empty rm -rf
     fi
-    rm -rf trinity_* tmp* log kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmomatic* samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
+    rm -rf trinity_* tmp* log kallisto* transcriptome* pipeliner* annotation* transdecoder* trimmed samples_trimmed* ExN50_plot.pdf multiqc fastqc edgeR_trans
     """
 
 
@@ -165,82 +186,71 @@ rule fastqc_before_trim_warnings:
         print(line.strip())
       print('See this output in: WARNING_fastqc_before_trim_overview.txt')
     
-checkpoint trimmomatic_split:
+rule fastp_pe:
   """
-  Splits file with information about all reads files into separate files
-  so they can be processed with trimmomatic in parallel.
-  """   
-  input:
-    samples=config["samples_file"]
-  output:
-    directory("trimmomatic")
-  log:
-    "logs/trimmomatic_split.log"
-  shell:
-    """
-    mkdir -p {output} &> {log}
-    split -d -l 1 {input} {output}/sample_ &>> {log}
-    """
-
-
-rule trimmomatic_parallel:
-  """
-  Processes individual read files with trimmomatic.
+  Adapter/quality trimming of paired-end reads with fastp.
   """
   input:
-    "trimmomatic/sample_{job_index}"
+    r1=lambda wc: SAMPLES[wc.replicate]["r1"],
+    r2=lambda wc: SAMPLES[wc.replicate]["r2"]
   output:
-    "trimmomatic/completed_{job_index}"
+    r1="trimmed/{replicate}_R1.fastq.gz",
+    r2="trimmed/{replicate}_R2.fastq.gz",
+    json="trimmed/{replicate}.fastp.json",
+    html="trimmed/{replicate}.fastp.html"
+  wildcard_constraints:
+    replicate=_alt(PE)
   log:
-    "logs/trimmomatic_parallel{job_index}.log"
+    "logs/fastp_{replicate}.log"
   params:
-    memory="10"
+    memory="8"
   threads:
-    4
+    8
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trimmomatic
-    # note: trimmomatic can use gzipped files directly
-    read SAMPLE REPLICATE F_READS R_READS < {input}
-    # If the sample line is empty, ignore it
-    if [ -z "$REPLICATE" ]; then
-      touch {output}
-      exit 0
-    fi
-    if [ ! -z "$R_READS" ]; then
-      trimmomatic PE -threads {threads} $F_READS $R_READS trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R1-U.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz trimmomatic/{wildcards[job_index]}.R2-U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
-      echo $SAMPLE	$REPLICATE	trimmomatic/{wildcards[job_index]}.R1-P.qtrim.fastq.gz	trimmomatic/{wildcards[job_index]}.R2-P.qtrim.fastq.gz > {output} 2>> {log}
-    else
-      trimmomatic SE -threads {threads} $F_READS trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz {config[trimmomatic_parameters]} &> {log}
-      echo $SAMPLE      $REPLICATE      trimmomatic/{wildcards[job_index]}.U.qtrim.fastq.gz > {output} 2>> {log}
-    fi
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-fastp
+    fastp -i {input.r1} -I {input.r2} -o {output.r1} -O {output.r2} -j {output.json} -h {output.html} -w {threads} {config[fastp_parameters]} &> {log}
     """
 
 
-def trimmomatic_completed_parallel_jobs(wildcards):
+rule fastp_se:
   """
-  Returns names of files with information about files processed with trimmomatic.
-  """
-  parallel_dir = checkpoints.trimmomatic_split.get(**wildcards).output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "sample_{job_index}")).job_index
-  completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
-  return completed_ids
-
-
-rule trimmomatic_merge:
-  """
-  Creates a file with information about all reads files processed with trimmomatic.
+  Adapter/quality trimming of single-end reads with fastp.
   """
   input:
-    trimmomatic_completed_parallel_jobs
+    r1=lambda wc: SAMPLES[wc.replicate]["r1"]
   output:
-    samples_trimmed="samples_trimmed.txt"
+    r1="trimmed/{replicate}.fastq.gz",
+    json="trimmed/{replicate}.fastp.json",
+    html="trimmed/{replicate}.fastp.html"
+  wildcard_constraints:
+    replicate=_alt(SE)
   log:
-    "logs/trimmomatic_merge.log"
+    "logs/fastp_{replicate}.log"
+  params:
+    memory="8"
+  threads:
+    8
   shell:
     """
-    cat {input} > {output.samples_trimmed} 2> {log}
+    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-fastp
+    fastp -i {input.r1} -o {output.r1} -j {output.json} -h {output.html} -w {threads} {config[fastp_parameters]} &> {log}
     """
+
+
+rule samples_trimmed:
+  """
+  Trinity/kallisto samples file pointing at the trimmed reads.
+  """
+  input:
+    [f for rep in SAMPLES for f in trimmed_reads(rep)]
+  output:
+    "samples_trimmed.txt"
+  run:
+    with open(output[0], "w") as out:
+      for rep, d in SAMPLES.items():
+        out.write("\t".join([d["condition"], rep] + trimmed_reads(rep)) + "\n")
+
 
 rule fastqc_after_trim:
   """
@@ -267,10 +277,11 @@ rule fastqc_after_trim:
 
 rule multiqc_after_trim:
   """
-  Creates multiQC report from individual fastQC reports after the trimming.
+  Creates multiQC report from fastp reports and fastQC reports after the trimming.
   """
   input:
-    "fastqc_after_trim"
+    fastqc="fastqc_after_trim",
+    fastp=expand("trimmed/{replicate}.fastp.json", replicate=SAMPLES)
   output:
     out_directory=directory("multiqc_after_trim"),
     report="multiqc_after_trim.txt"
@@ -287,7 +298,7 @@ rule multiqc_after_trim:
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
     mkdir {output.out_directory} &> {log}
-    multiqc -o {output.out_directory} {input} &>> {log}
+    multiqc -o {output.out_directory} {input.fastqc} {input.fastp} &>> {log}
     cp multiqc_after_trim/multiqc_data/multiqc_fastqc.txt {output.report} &>> {log}
     """
 
@@ -352,135 +363,54 @@ fail: {str(after_trim.count('fail'))} out of {str(len(after_trim))} ({str(after_
       print('See this output in FastQC_comparison_after_trim.txt')
 
 
-rule trinity_inchworm_chrysalis:
+rule trinity:
   """
-  Runs first two stages of Trinity assembly (Inchworm and Chrysalis).
+  Complete Trinity assembly (Inchworm, Chrysalis, Butterfly) as a single job.
+  Butterfly runs under Trinity's internal ParaFly with --CPU {threads}.
+
+  The whole run happens in node-local /tmp (avoids millions of small-file ops on the
+  shared filesystem); only the final FASTA and gene_trans_map are copied back.
+  Node-local state does not survive a failed job, so a retry restarts from scratch.
+
+  --max_memory is 90% of the memory slurm actually allocated (SLURM_MEM_PER_NODE, MiB),
+  computed at runtime because profile resources are unresolved when the DAG is built.
+  params.memory is only used by the legacy --cluster launcher (transXpress.sh).
   """
   input:
-    samples="samples_trimmed.txt",
-  output:
-    "trinity_out_dir/recursive_trinity.cmds"
-  log:
-    "logs/trinity_inchworm_chrysalis.log"
-  params:
-    memory="256"
-  threads:
-    16
-  shell:
-    """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
-    Trinity --no_distributed_trinity_exec --max_memory {params.memory}G --CPU {threads} --samples_file {input} {config[trinity_parameters]} {config[strand_specific]} &> {log}
-    """
-
-
-checkpoint trinity_butterfly_split:
-  """
-  Preparation for last stage of Trinity (Butterfly) parallelization by splitting
-  the commands into independent parts.
-  """
-  input:
-    "trinity_out_dir/recursive_trinity.cmds"
-  output:
-    directory("trinity_out_dir/parallel_jobs")
-  log:
-    "logs/trinity_split.log"
-  params:
-    memory="4",
-    cpus="2"
-  shell:
-    """
-    mkdir -p {output} &> {log}
-    sed 's/--max_memory [^ ]*/--max_memory {params.memory}G/g; s/--CPU [0-9]*/--CPU {params.cpus}/g' {input} | shuf > {output}/shuffled_cmds.tmp 2>> {log}
-    split -n l/1000 -e -d {output}/shuffled_cmds.tmp {output}/job_ &>> {log}
-    rm {output}/shuffled_cmds.tmp &>> {log}
-    """
-
-
-rule trinity_butterfly_parallel:
-  """
-  Runs Trinity Butterfly commands (which were split into parts) in parallel.
-  """
-  input:
-    "trinity_out_dir/parallel_jobs/job_{job_index}"
-  output:
-    "trinity_out_dir/parallel_jobs/completed_{job_index}"
-  log:
-    "logs/trinity_parallel{job_index}.log"
-  params:
-    memory="4"
-  threads:
-    2
-  shell:
-    """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
-    set -eo pipefail
-    while IFS= read -r cmd; do
-        [ -z "$cmd" ] && continue
-        echo "=== Running: $cmd" >> {log}
-        eval "$cmd" >> {log} 2>&1
-    done < {input}
-    cp -p {input} {output} >> {log} 2>&1
-    """
-
-
-def trinity_completed_parallel_jobs(wildcards):
-  """
-  Returns filenames of the files processed in parallel.
-  """
-  parallel_dir = checkpoints.trinity_butterfly_split.get(**wildcards).output[0]
-  job_ids = glob_wildcards(os.path.join(parallel_dir, "job_{job_index}")).job_index
-  completed_ids = expand(os.path.join(parallel_dir,"completed_{job_index}"), job_index=job_ids)
-  return completed_ids
-
-rule trinity_butterfly_parallel_merge:
-  input:
-    jobs=trinity_completed_parallel_jobs,
-    cmds="trinity_out_dir/recursive_trinity.cmds"
-  output:
-    cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed"
-  log:
-    "logs/trinity_butterfly_parallel_merge.log"
-  params:
-    memory="10"
-  threads:
-    1
-  shell:
-    """
-    # Can crash if there are too many parallel jobs
-    # See https://bitbucket.org/snakemake/snakemake/issues/878/errno-7-argument-list-too-long-path-to-bin 
-    cat {input.jobs} > {output.cmds_completed} 2> {log}
-    """
-
-
-rule trinity_final:
-  """
-  Runs the final Trinity assembly.
-  """
-  input:
-    cmds_completed="trinity_out_dir/recursive_trinity.cmds.completed",
     samples="samples_trimmed.txt"
   output:
-    transcriptome="trinity_out_dir.Trinity.fasta", #new output files live in base directory now, not trinity_out_dir.
-    gene_trans_map="trinity_out_dir.Trinity.fasta.gene_trans_map" #according to trinity dev, this is a feature, not a bug
+    transcriptome="trinity_out_dir.Trinity.fasta",
+    gene_trans_map="trinity_out_dir.Trinity.fasta.gene_trans_map"
   log:
-    "logs/trinity_final.log"
+    "logs/trinity.log"
   params:
-    memory="256"
+    memory="384"
   threads:
     16
   shell:
     """
     source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
-    Trinity --max_memory {params.memory}G --CPU {threads} --samples_file {input.samples} {config[trinity_parameters]} {config[strand_specific]} &>> {log}
+    wd=/tmp/transxpress_trinity_${{SLURM_JOB_ID:-$$}}
+    trap 'rm -rf "$wd"' EXIT
+    mkdir -p "$wd"
+    export TMPDIR="$wd"
+    mem_mib=${{SLURM_MEM_PER_NODE:-$(( {params.memory} * 1024 ))}}
+    max_mem=$(( mem_mib * 9 / 10 / 1024 ))G
+    df -h /tmp > {log}
+    echo "Trinity --max_memory $max_mem" >> {log}
+    Trinity --max_memory $max_mem --CPU {threads} --samples_file {input.samples} --output "$wd/trinity_out_dir" {config[trinity_parameters]} {config[strand_specific]} &>> {log}
+    cp "$wd/trinity_out_dir.Trinity.fasta" {output.transcriptome}
+    cp "$wd/trinity_out_dir.Trinity.fasta.gene_trans_map" {output.gene_trans_map}
     """
+
 
 rule transcriptome_copy:
   """
   Copies the assembled transcriptome to the transxpress directory.
   """
   input:
-    transcriptome=rules.trinity_final.output.transcriptome,
-    gene_trans_map=rules.trinity_final.output.gene_trans_map,
+    transcriptome=rules.trinity.output.transcriptome,
+    gene_trans_map=rules.trinity.output.gene_trans_map,
   output:
     transcriptome="transcriptome.fasta",
     gene_trans_map="transcriptome.gene_trans_map",

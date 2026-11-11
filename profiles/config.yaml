@@ -6,9 +6,10 @@ default-resources:
     threads: 1
     mem: 2gb
 set-resources:
-    trimmomatic_parallel:
-        mem: 10gb
-        threads: 4
+    fastp_pe:
+        mem: 8gb
+    fastp_se:
+        mem: 8gb
     fastqc_before_trim:
         mem: 4gb
         threads: 4
@@ -17,22 +18,10 @@ set-resources:
         threads: 4
     multiqc_after_trim:
         mem: 4gb
-    trinity_inchworm_chrysalis:
+    trinity:
         slurm_partition: long
-        runtime: 7200
+        runtime: 10080
         mem: 384gb
-        threads: 16
-    trinity_butterfly_parallel:
-        threads: 2
-        mem: 4gb
-        runtime: 120
-    trinity_butterfly_parallel_merge:
-        mem: 10gb
-    trinity_final:
-        slurm_partition: long
-        runtime: 7200
-        mem: 256gb
-        threads: 16
     busco:
         mem: 10gb
         threads: 4
@@ -55,6 +44,10 @@ set-resources:
         threads: 8    
     annotated_fasta:
         mem: 4gb
+set-threads:
+    trinity: 64
+    fastp_pe: 8
+    fastp_se: 8
 restart-times: 2
 latency-wait: 60
 jobs: 1000
