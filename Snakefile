@@ -103,7 +103,7 @@ rule fastqc_before_trim:
     4
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     mkdir {output} &> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input})
     fastqc -f fastq -t {threads} -o {output} $FILES &>> {log}
@@ -127,7 +127,7 @@ rule multiqc_before_trim:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     # common error resolved by those two export commands
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
@@ -208,7 +208,7 @@ rule fastp_pe:
     8
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-fastp
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-fastp
     fastp -i {input.r1} -I {input.r2} -o {output.r1} -O {output.r2} -j {output.json} -h {output.html} -w {threads} {config[fastp_parameters]} &> {log}
     """
 
@@ -233,7 +233,7 @@ rule fastp_se:
     8
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-fastp
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-fastp
     fastp -i {input.r1} -o {output.r1} -j {output.json} -h {output.html} -w {threads} {config[fastp_parameters]} &> {log}
     """
 
@@ -268,7 +268,7 @@ rule fastqc_after_trim:
     4
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     mkdir {output} &> {log}
     FILES=$(awk '{{ printf "%s\\n%s\\n", $3,$4}}' {input})
     fastqc -f fastq -t {threads} -o {output} $FILES &>> {log}
@@ -293,7 +293,7 @@ rule multiqc_after_trim:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-qc
     # common error resolved by those two export commands
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
@@ -389,7 +389,7 @@ rule trinity:
     16
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     wd=/tmp/transxpress_trinity_${{SLURM_JOB_ID:-$$}}
     trap 'rm -rf "$wd"' EXIT
     mkdir -p "$wd"
@@ -449,7 +449,7 @@ rule trinity_stats:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
     $TRINITY_HOME/util/TrinityStats.pl {input.transcriptome} > {output.stats} 2> {log}
     $TRINITY_HOME/util/misc/contig_ExN50_statistic.pl {input.expression} {input.transcriptome} > {output.exN50} 2>> {log}
@@ -473,7 +473,7 @@ rule busco:
     4
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-busco
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-busco
     lineage={config[lineage]}
     if [ -z "$lineage" ]; then
       busco -m transcriptome -i {input.transcriptome} -o {output.out_directory} --auto-lineage -c {threads} &> {log}
@@ -499,7 +499,7 @@ rule transdecoder_longorfs:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder
     rm -rf {input.transcriptome}.transdecoder_dir &> {log}
     TransDecoder.LongOrfs -t {input.transcriptome} --output_dir transdecoder &>> {log} 
     cp -p transdecoder/{input.transcriptome}.transdecoder_dir/longest_orfs.pep {output.orfs} &>> {log}
@@ -525,7 +525,7 @@ rule transdecoder_predict:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-transdecoder
     TransDecoder.Predict -t {input.transcriptome} --output_dir transdecoder --retain_pfam_hits {input.pfam} --retain_blastp_hits {input.blastp} &> {log}
     cp -p transdecoder/{input.transcriptome}.transdecoder.pep {output} &>> {log}
     """
@@ -547,7 +547,7 @@ rule trinity_DE:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
     num_replicates=$(awk '{{print $2}}' {input.samples} | sort | uniq | wc -l)
     num_samples=$(awk '{{print $1}}' {input.samples} | sort | uniq | wc -l)
@@ -777,7 +777,7 @@ rule rfam_parallel:
     4
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam
     cmscan -E {config[e_value_threshold]} --rfam --cpu {threads} --tblout {output} {input[db]} {input[fasta]} &> {log}
     """
 
@@ -799,7 +799,7 @@ rule pfam_parallel:
     4
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam
     # Transdecoder requires --domtblout output
     hmmscan -E {config[e_value_threshold]} --cpu {threads} --domtblout {output} {input[db]} {input[fasta]} &> {log}
     """
@@ -822,7 +822,7 @@ rule sprot_blastp_parallel:
     4
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast
     diamond blastp --query {input[fasta]} --db {input[db]} --threads {threads} --evalue {config[e_value_threshold]} --max-hsps 1 --max-target-seqs 1 --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle --out {output} &> {log}
     """
 
@@ -843,7 +843,7 @@ rule signalp_parallel:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/signalp
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/signalp
     mkdir -p annotations/signalp &> {log}
     signalp6 --fastafile {input} --organism eukarya --output_dir signalp_{wildcards.index} --format none --mode fast &>> {log}
     mv signalp_{wildcards.index}/prediction_results.txt {output}
@@ -897,7 +897,7 @@ rule kallisto:
     8
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-trinityutils
     TRINITY_HOME=$(python -c 'import os;import shutil;TRINITY_EXECUTABLE_PATH=shutil.which("Trinity");print(os.path.dirname(os.path.join(os.path.dirname(TRINITY_EXECUTABLE_PATH), os.readlink(TRINITY_EXECUTABLE_PATH))))')
     assembler="{config[assembler]}"
     strand_specific="{config[strand_specific]}"
@@ -938,7 +938,7 @@ rule download_sprot:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-blast
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz" &> {log}
     gunzip db/uniprot_sprot.fasta.gz &>> {log}
     diamond makedb --in db/uniprot_sprot.fasta -d db/uniprot_sprot &>> {log}
@@ -959,7 +959,7 @@ rule download_pfam:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-pfam
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.hmm.gz" &> {log}
     gunzip db/Pfam-A.hmm.gz &>> {log}
     hmmpress db/Pfam-A.hmm &>> {log}
@@ -980,7 +980,7 @@ rule download_rfam:
     1
   shell:
     """
-    source activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam
+    source /projects/wenglab/testtube/matthew/miniforge3/bin/activate /projects/wenglab/testtube/matthew/miniforge3/envs/transxpress-rfam
     wget --directory-prefix db "ftp://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz" &> {log}
     gunzip db/Rfam.cm.gz &>> {log}
     cmpress db/Rfam.cm &>> {log}    
