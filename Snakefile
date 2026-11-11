@@ -365,8 +365,8 @@ rule trinity:
   shared filesystem); only the final FASTA and gene_trans_map are copied back.
   Node-local state does not survive a failed job, so a retry restarts from scratch.
 
-  --max_memory is 90% of the slurm memory request, leaving headroom for allocations
-  Trinity doesn't account for.
+  --max_memory is 90% of the memory slurm actually allocated (SLURM_MEM_PER_NODE, MiB),
+  computed at runtime; resources are not resolved when the DAG is built.
   """
   input:
     samples="samples_trimmed.txt"
@@ -375,8 +375,6 @@ rule trinity:
     gene_trans_map="trinity_out_dir.Trinity.fasta.gene_trans_map"
   log:
     "logs/trinity.log"
-  params:
-    max_memory=lambda wildcards, resources: "%dG" % int(getattr(resources, "mem_mb", 256000) * 0.9 / 1000)
   threads:
     16
   shell:
@@ -386,8 +384,11 @@ rule trinity:
     trap 'rm -rf "$wd"' EXIT
     mkdir -p "$wd"
     export TMPDIR="$wd"
+    mem_mib=${{SLURM_MEM_PER_NODE:-{resources.mem_mb}}}
+    max_mem=$(( mem_mib * 9 / 10 / 1024 ))G
     df -h /tmp > {log}
-    Trinity --max_memory {params.max_memory} --CPU {threads} --samples_file {input.samples} --output "$wd/trinity_out_dir" {config[trinity_parameters]} {config[strand_specific]} &>> {log}
+    echo "Trinity --max_memory $max_mem" >> {log}
+    Trinity --max_memory $max_mem --CPU {threads} --samples_file {input.samples} --output "$wd/trinity_out_dir" {config[trinity_parameters]} {config[strand_specific]} &>> {log}
     cp "$wd/trinity_out_dir.Trinity.fasta" {output.transcriptome}
     cp "$wd/trinity_out_dir.Trinity.fasta.gene_trans_map" {output.gene_trans_map}
     """
